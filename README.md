@@ -1,4 +1,4 @@
-# npm-package-template
+# docker-over-ssh
 
 A template for npm packages built in TypeScript
 
@@ -14,7 +14,7 @@ A template for npm packages built in TypeScript
    1. Disable "Allow rebase merging"
    1. Enable "Automatically delete head branches"
 1. Create a new branch
-1. Commit initial code to the branch (be sure to replace all refernces to npm-package-template, and remove these instructions from the README)
+1. Commit initial code to the branch (be sure to replace all refernces to docker-over-ssh, and remove these instructions from the README)
 1. Push the new branch and create a PR
 1. In Settings -> Branch Protection, create a new rule
    1. Use "master" as the branch name pattern
@@ -33,7 +33,7 @@ yarn add @forbeslindesay/npm-pa ckage-template
 ## Usage
 
 ```ts
-import add from '@forbeslindesay/npm-package-template';
+import add from '@forbeslindesay/docker-over-ssh';
 
 const result = add(2, 3);
 // => 5
