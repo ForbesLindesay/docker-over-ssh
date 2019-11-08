@@ -60,7 +60,7 @@ export async function push(
       );
       console.warn(`[docker-over-ssh push] push`);
       await run('docker', ['push', `localhost:${port}/${container}`], {
-        debug: false,
+        debug: true,
         name: 'docker push',
       });
     } finally {
@@ -76,20 +76,4 @@ export async function push(
     await kill();
   }
 }
-
-// async function s() {
-//   await run('docker', ['images'], {debug: true, name: 'docker images'});
-//   await push('node:12-alpine', async (stream) => {
-//     await run('docker', ['images'], {debug: true, name: 'docker images'});
-//     await run('docker', ['rmi', 'node:12-alpine'], {
-//       debug: true,
-//       name: 'docker images',
-//     });
-//     await pull('node:12-alpine', stream, stream);
-//   });
-//   await run('docker', ['images'], {debug: true, name: 'docker images'});
-// }
-// s().catch((ex) => {
-//   console.error(ex);
-//   process.exit(1);
-// });
+// docker pull dokku/letsencrypt:0.1.0 && docker pull gliderlabs/herokuish:latest && docker pull gliderlabs/herokuish:v0.5.0

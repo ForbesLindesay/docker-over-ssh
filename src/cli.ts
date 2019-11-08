@@ -2,6 +2,9 @@
 
 import {spawn} from 'child_process';
 import {pull, push} from './';
+import progress from 'progress-stream';
+import logUpdate from 'log-update';
+import bytes from 'bytes';
 
 switch (process.argv[2]) {
   case 'pull':
@@ -18,10 +21,13 @@ switch (process.argv[2]) {
   case 'push':
     const child = process.argv.slice(4);
     push(process.argv[3], async (stream) => {
+      const prog = progress({time: 100}, (e) => {
+        logUpdate(`${bytes(e.transferred)} at ${bytes(e.speed)}/Sec`);
+      });
       const proc = spawn(child[0], child.slice(1), {
         stdio: ['pipe', 'pipe', 'inherit'],
       });
-      stream.pipe(proc.stdin);
+      stream.pipe(prog).pipe(proc.stdin);
       proc.stdout.pipe(stream);
       const code = await new Promise<number>((resolve, reject) => {
         proc.on('exit', resolve);
