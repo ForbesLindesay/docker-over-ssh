@@ -3,6 +3,9 @@
   "description": "Push docker containers efficiently over abitrary streams, e.g. ssh",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "bin": {
+    "docker-over-ssh": "./lib/cli.js"
+  },
   "repository": "git@github.com:ForbesLindesay/docker-over-ssh.git",
   "author": "Forbes Lindesay <forbes@lindesay.co.uk>",
   "license": "MIT",
