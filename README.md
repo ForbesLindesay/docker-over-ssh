@@ -18,6 +18,8 @@ To transfer an image called `node:12-alpine` to a server called `dokku` over `ss
 docker-over-ssh push node:12-alpine ssh dokku "docker-over-ssh pull node:12-alpine"
 ```
 
+If you already have a local registry running, that you would like to use, you can specify the `LOCAL_DOCKER_REGISTRY_PORT` environment variable.
+
 ## How it works
 
 The local CLI sets up a temporary docker registry (itself made using docker). It then pushes the requested image (and only the requested image) to that docker registry. It then spawns a child process, using the remaining params. In this example, that's `ssh dokku "docker-over-ssh pull node:12-alpine"`. It proxies connections over stdio <-> TCP between that child process and the temporary docker registry.

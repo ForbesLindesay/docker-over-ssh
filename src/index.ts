@@ -44,8 +44,17 @@ export async function push(
   container: string,
   push: (stream: Duplex) => Promise<void>,
 ) {
+  let port = process.env.LOCAL_DOCKER_REGISTRY_PORT
+    ? parseInt(process.env.LOCAL_DOCKER_REGISTRY_PORT, 10)
+    : null;
+  let killContainer;
   console.warn(`[docker-over-ssh push] Registry starting`);
-  const {externalPort: port, kill} = await start();
+  if (!port) {
+    const {externalPort, kill} = await start();
+    port = externalPort;
+    killContainer = kill;
+  }
+
   console.warn(`[docker-over-ssh push] Registry started at localhost:${port}`);
   try {
     try {
@@ -73,7 +82,7 @@ export async function push(
     const s = server(port, 'localhost');
     await push(s);
   } finally {
-    await kill();
+    if (killContainer) await killContainer();
   }
 }
 // docker pull dokku/letsencrypt:0.1.0 && docker pull gliderlabs/herokuish:latest && docker pull gliderlabs/herokuish:v0.5.0
