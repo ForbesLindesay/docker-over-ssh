@@ -1,40 +1,27 @@
 # docker-over-ssh
 
-A template for npm packages built in TypeScript
-
-## Setting Up the New Repo
-
-1. Hit "Use This Template" to create the repository
-1. Enable [CircleCI](https://circleci.com/add-projects/gh/ForbesLindesay)
-1. Enable [semantic-pull-requests](https://github.com/apps/semantic-pull-requests)
-1. In Settings
-   1. Disable "Wikis"
-   1. Disable "Projects"
-   1. Disable "Allow merge commits"
-   1. Disable "Allow rebase merging"
-   1. Enable "Automatically delete head branches"
-1. Create a new branch
-1. Commit initial code to the branch (be sure to replace all refernces to docker-over-ssh, and remove these instructions from the README)
-1. Push the new branch and create a PR
-1. In Settings -> Branch Protection, create a new rule
-   1. Use "master" as the branch name pattern
-   1. Enable "Require status checks to pass before merging"
-   1. Select the unit tests as required
-   1. Enable "Include administrators"
-   1. Enable "Restrict who can push to matching branches"
-1. Merge the PR
+Push docker containers efficiently over abitrary streams, e.g. ssh
 
 ## Installation
 
+On both your local machine, and the remote machine you want to transfer an image to:
+
 ```
-yarn add @forbeslindesay/npm-pa ckage-template
+npm i -g docker-over-ssh
 ```
 
 ## Usage
 
-```ts
-import add from '@forbeslindesay/docker-over-ssh';
+To transfer an image called `node:12-alpine` to a server called `dokku` over `ssh`, run:
 
-const result = add(2, 3);
-// => 5
 ```
+docker-over-ssh push node:12-alpine ssh dokku "docker-over-ssh pull node:12-alpine"
+```
+
+## How it works
+
+The local CLI sets up a temporary docker registry (itself made using docker). It then pushes the requested image (and only the requested image) to that docker registry. It then spawns a child process, using the remaining params. In this example, that's `ssh dokku "docker-over-ssh pull node:12-alpine"`. It proxies connections over stdio <-> TCP between that child process and the temporary docker registry.
+
+The remote CLI sets up a TCP server that proxies requests through to stdio (i.e. through to the local CLI's docker registry). It then runs `docker pull`, which pulls any missing layers over the ssh connection.
+
+This is useful, because it can take advantage of the docker layer caching for much smaller transfers.
