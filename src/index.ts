@@ -3,8 +3,7 @@ import {server, client} from './tcpStreamServer';
 import {Readable, Writable, Duplex} from 'stream';
 import {run} from '@databases/with-container';
 import chalk from 'chalk';
-import ngrok from './ngrok';
-import {URL} from 'url';
+import getHost from './ngrok';
 
 export const detectPort: (
   defaultPort: number,
@@ -20,64 +19,34 @@ export async function pull(
   const {stream, server} = client(port);
   console.warn(`[docker-over-ssh pull] started client at localhost:5200`);
   inputStream.pipe(stream).pipe(outputStream);
-  const {host, killNgrok} = await startNgrok(port);
-  try {
-    console.warn(`[docker-over-ssh pull] pull ${host}/${container}`);
-    await run('docker', ['pull', `${host}/${container}`], {
-      debug: false,
-      name: 'docker pull',
-    });
-    console.warn(
-      `[docker-over-ssh pull] tag ${host}/${container} ${container}`,
-    );
-    await run('docker', ['tag', `${host}/${container}`, container], {
-      debug: false,
-      name: 'docker tag',
-    });
-    console.warn(`[docker-over-ssh pull] cleanup tags`);
-    await run('docker', ['rmi', `${host}/${container}`], {
-      debug: false,
-      name: 'docker rmi localhost...',
-    });
-    server.close();
-    inputStream.unpipe(stream);
-    stream.unpipe(outputStream);
-  } finally {
-    await killNgrok();
-  }
+  await getHost(
+    port,
+    process.platform === 'darwin' ? 'host.docker.internal' : 'localhost',
+    async (host) => {
+      console.warn(`[docker-over-ssh pull] pull ${host}/${container}`);
+      await run('docker', ['pull', `${host}/${container}`], {
+        debug: false,
+        name: 'docker pull',
+      });
+      console.warn(
+        `[docker-over-ssh pull] tag ${host}/${container} ${container}`,
+      );
+      await run('docker', ['tag', `${host}/${container}`, container], {
+        debug: false,
+        name: 'docker tag',
+      });
+      console.warn(`[docker-over-ssh pull] cleanup tags`);
+      await run('docker', ['rmi', `${host}/${container}`], {
+        debug: false,
+        name: 'docker rmi localhost...',
+      });
+      server.close();
+      inputStream.unpipe(stream);
+      stream.unpipe(outputStream);
+    },
+  );
 }
 
-async function startNgrok(port: number) {
-  if (!process.env.DOCKER_REGISTRY_NGROK) {
-    return {
-      host: `${
-        process.platform === 'darwin' ? 'host.docker.internal' : 'localhost'
-      }:${port}`,
-      killNgrok: async () => {
-        // do nothing
-      },
-    };
-  }
-  if (!ngrok) {
-    console.error(
-      chalk.red(
-        `[docker-over-ssh push] You must install ngrok using "yarn add ngrok" or "npm install ngrok" to use ngrok`,
-      ),
-    );
-    return process.exit(1);
-  }
-  const url = await ngrok.connect({
-    addr: port,
-    authtoken:
-      process.env.DOCKER_REGISTRY_NGROK === 'true'
-        ? undefined
-        : process.env.DOCKER_REGISTRY_NGROK,
-  });
-  const killNgrok = async () => await ngrok!.disconnect(url);
-  const u = new URL(url);
-  const host = u.host;
-  return {host, killNgrok};
-}
 export async function push(
   container: string,
   push: (stream: Duplex) => Promise<void>,
@@ -92,10 +61,9 @@ export async function push(
     port = externalPort;
     killContainer = kill;
   }
-  try {
-    const {host, killNgrok} = await startNgrok(port);
 
-    try {
+  try {
+    await getHost(port, 'localhost', async (host) => {
       console.warn(`[docker-over-ssh push] Registry started at ${host}`);
       let pushed = false;
       try {
@@ -122,9 +90,7 @@ export async function push(
           name: 'docker rmi localhost...',
         });
       }
-    } finally {
-      if (killNgrok) await killNgrok();
-    }
+    });
 
     const s = server(port, 'localhost');
     await push(s);

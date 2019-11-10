@@ -1,3 +1,5 @@
+import {URL} from 'url';
+
 export interface NGrok {
   authtoken(token: string): Promise<void>;
   connect(options: {
@@ -58,4 +60,39 @@ try {
   // do nothing
 }
 
-export default ngrok;
+let runningNGroks = 0;
+export default async function getHost<T>(
+  port: number,
+  defaultHost: string,
+  run: (host: string) => Promise<T>,
+): Promise<T> {
+  if (!process.env.DOCKER_REGISTRY_NGROK) {
+    return await run(`${defaultHost}:${port}`);
+  }
+  if (!ngrok) {
+    throw new Error(
+      'You must install ngrok if you have set DOCKER_REGISTRY_NGROK',
+    );
+  }
+
+  const urlString = await ngrok.connect({
+    addr: port,
+    authtoken:
+      process.env.DOCKER_REGISTRY_NGROK === 'true'
+        ? undefined
+        : process.env.DOCKER_REGISTRY_NGROK,
+  });
+  runningNGroks++;
+  try {
+    const url = new URL(urlString);
+    return await run(url.host);
+  } finally {
+    await ngrok.disconnect(urlString);
+    setTimeout(async () => {
+      runningNGroks--;
+      if (runningNGroks === 0) {
+        await ngrok!.kill();
+      }
+    }, 1000);
+  }
+}
