@@ -14,14 +14,14 @@ refs:
 workflows:
   test:
     jobs:
-      - unit-tests:
-          <<: *not_master
-          name: node-8
-          version: '8'
-      - unit-tests:
-          <<: *not_master
-          name: node-10
-          version: '10'
+      # - unit-tests:
+      #     <<: *not_master
+      #     name: node-8
+      #     version: '8'
+      # - unit-tests:
+      #     <<: *not_master
+      #     name: node-10
+      #     version: '10'
       - unit-tests:
           <<: *not_master
           name: node-12
@@ -70,7 +70,6 @@ jobs:
       - image: circleci/node:<< parameters.version >>
         environment:
           LOCAL_DOCKER_REGISTRY_PORT: '5000'
-          DOCKER_REGISTRY_NGROK: 'true'
       - image: registry:2
     steps:
       - setup
