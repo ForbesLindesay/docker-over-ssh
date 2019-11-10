@@ -1,6 +1,7 @@
 import {URL} from 'url';
 import generatePassCode, {Encoding} from '@authentication/generate-passcode';
 import {run} from '@databases/with-container';
+import chalk = require('chalk');
 
 export interface NGrokOptions {
   /**
@@ -70,6 +71,11 @@ export default async function getHost<T>(
   withHost: (host: string) => Promise<T>,
 ): Promise<T> {
   if (!process.env.DOCKER_REGISTRY_NGROK) {
+    if (process.env.CIRCLECI) {
+      console.warn(
+        chalk.red(`Running on CircleCI may not work without ngrok configured!`),
+      );
+    }
     return await withHost(`${defaultHost}:${port}`);
   }
   if (!ngrok) {
