@@ -2,9 +2,8 @@ import {start} from './registry';
 import {server, client} from './tcpStreamServer';
 import {Readable, Writable, Duplex} from 'stream';
 import {run} from '@databases/with-container';
-
-const host =
-  process.platform === 'darwin' ? 'host.docker.internal' : 'localhost';
+import chalk from 'chalk';
+import getHost from './ngrok';
 
 export const detectPort: (
   defaultPort: number,
@@ -18,26 +17,34 @@ export async function pull(
   console.warn(`[docker-over-ssh pull] starting client`);
   const port = await detectPort(5200);
   const {stream, server} = client(port);
-  console.warn(`[docker-over-ssh pull] started client at localhost:5200`);
   inputStream.pipe(stream).pipe(outputStream);
-  console.warn(`[docker-over-ssh pull] pull`);
-  await run('docker', ['pull', `${host}:${port}/${container}`], {
-    debug: false,
-    name: 'docker pull',
-  });
-  console.warn(`[docker-over-ssh pull] tag`);
-  await run('docker', ['tag', `${host}:${port}/${container}`, container], {
-    debug: false,
-    name: 'docker tag',
-  });
-  console.warn(`[docker-over-ssh pull] cleanup tags`);
-  await run('docker', ['rmi', `${host}:${port}/${container}`], {
-    debug: false,
-    name: 'docker rmi localhost...',
-  });
-  server.close();
-  inputStream.unpipe(stream);
-  stream.unpipe(outputStream);
+  await getHost(
+    port,
+    process.platform === 'darwin' ? 'host.docker.internal' : 'localhost',
+    async (host) => {
+      console.warn(`[docker-over-ssh pull] started client at ${host}`);
+      console.warn(`[docker-over-ssh pull] pull ${host}/${container}`);
+      await run('docker', ['pull', `${host}/${container}`], {
+        debug: false,
+        name: 'docker pull',
+      });
+      console.warn(
+        `[docker-over-ssh pull] tag ${host}/${container} ${container}`,
+      );
+      await run('docker', ['tag', `${host}/${container}`, container], {
+        debug: false,
+        name: 'docker tag',
+      });
+      console.warn(`[docker-over-ssh pull] cleanup tags`);
+      await run('docker', ['rmi', `${host}/${container}`], {
+        debug: false,
+        name: 'docker rmi localhost...',
+      });
+      server.close();
+      inputStream.unpipe(stream);
+      stream.unpipe(outputStream);
+    },
+  );
 }
 
 export async function push(
@@ -55,30 +62,36 @@ export async function push(
     killContainer = kill;
   }
 
-  console.warn(`[docker-over-ssh push] Registry started at localhost:${port}`);
   try {
-    try {
-      console.warn(`[docker-over-ssh push] tag`);
-      await run(
-        'docker',
-        ['tag', container, `localhost:${port}/${container}`],
-        {
+    await getHost(port, 'localhost', async (host) => {
+      console.warn(`[docker-over-ssh push] Registry started at ${host}`);
+      let pushed = false;
+      try {
+        console.warn(`[docker-over-ssh push] tag`);
+        await run('docker', ['tag', container, `${host}/${container}`], {
           debug: false,
           name: 'docker push',
-        },
-      );
-      console.warn(`[docker-over-ssh push] push`);
-      await run('docker', ['push', `localhost:${port}/${container}`], {
-        debug: true,
-        name: 'docker push',
-      });
-    } finally {
-      console.warn(`[docker-over-ssh push] cleanup tags`);
-      await run('docker', ['rmi', `localhost:${port}/${container}`], {
-        debug: false,
-        name: 'docker rmi localhost...',
-      });
-    }
+        });
+        console.warn(`[docker-over-ssh push] push`);
+        await run('docker', ['push', `${host}/${container}`], {
+          debug: true,
+          name: 'docker push',
+        });
+        pushed = true;
+      } finally {
+        if (!pushed) {
+          console.warn(
+            chalk.red(`[docker-over-ssh push] failed to push docker container`),
+          );
+        }
+        console.warn(`[docker-over-ssh push] cleanup tags`);
+        await run('docker', ['rmi', `${host}/${container}`], {
+          debug: false,
+          name: 'docker rmi localhost...',
+        });
+      }
+    });
+
     const s = server(port, 'localhost');
     await push(s);
   } finally {
