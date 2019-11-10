@@ -1,5 +1,7 @@
 # docker-over-ssh
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/ForbesLindesay/docker-over-ssh.svg)](https://greenkeeper.io/)
+
 Push docker containers efficiently over abitrary streams, e.g. ssh
 
 ## Installation
