@@ -68,6 +68,9 @@ jobs:
         type: string
     docker:
       - image: circleci/node:<< parameters.version >>
+        environment:
+          LOCAL_DOCKER_REGISTRY_PORT: 5000
+      - image: registry:2
     steps:
       - setup
       - build
@@ -109,6 +112,7 @@ commands:
 
   test:
     steps:
+      - setup_remote_docker
       - run:
           name: Test
           command: yarn test
