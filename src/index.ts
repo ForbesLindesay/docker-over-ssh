@@ -17,12 +17,12 @@ export async function pull(
   console.warn(`[docker-over-ssh pull] starting client`);
   const port = await detectPort(5200);
   const {stream, server} = client(port);
-  console.warn(`[docker-over-ssh pull] started client at localhost:5200`);
   inputStream.pipe(stream).pipe(outputStream);
   await getHost(
     port,
     process.platform === 'darwin' ? 'host.docker.internal' : 'localhost',
     async (host) => {
+      console.warn(`[docker-over-ssh pull] started client at ${host}`);
       console.warn(`[docker-over-ssh pull] pull ${host}/${container}`);
       await run('docker', ['pull', `${host}/${container}`], {
         debug: false,
