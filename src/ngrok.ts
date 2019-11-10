@@ -1,6 +1,6 @@
 import {URL} from 'url';
 import generatePassCode, {Encoding} from '@authentication/generate-passcode';
-// import {run} from '@databases/with-container';
+import {run} from '@databases/with-container';
 
 export interface NGrokOptions {
   /**
@@ -98,14 +98,14 @@ export default async function getHost<T>(
   try {
     const url = new URL(urlString);
     if (auth) {
-      // await run(
-      //   'docker',
-      //   ['login', '-u', auth.user, '-p', auth.pass, url.host],
-      //   {
-      //     debug: false,
-      //     name: 'docker login',
-      //   },
-      // );
+      await run(
+        'docker',
+        ['login', '-u', auth.user, '-p', auth.pass, url.host],
+        {
+          debug: false,
+          name: 'docker login',
+        },
+      );
     }
     return await withHost(url.host);
   } finally {
