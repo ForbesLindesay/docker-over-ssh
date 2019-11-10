@@ -19,6 +19,7 @@
     "ci:test": "jest --silent --maxWorkers=2"
   },
   "dependencies": {
+    "@authentication/generate-passcode": "^1.1.0",
     "@databases/with-container": "^0.0.2",
     "bytes": "^3.1.0",
     "chalk": "^3.0.0",
