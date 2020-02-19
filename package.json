@@ -39,7 +39,7 @@
     "ngrok": "^3.2.5",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
-    "ts-jest": "^24.1.0",
+    "ts-jest": "^25.2.1",
     "tslint": "^5.20.0",
     "typescript": "^3.6.4"
   },
